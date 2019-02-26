@@ -12,7 +12,7 @@ public class Host {
 
 
 
-	public final double r0 = 0.6; // wt growth-rate without treatment
+	public static double r0 = 0.6; // wt growth-rate without treatment
 	public static double flatness = 15;
 	public static double alpha = 0.017; // fitnessCost
 	public static double theta1 = 0.3; // a parameter for the shape of the dose-response curve for growth of wild-type strain
@@ -171,14 +171,14 @@ public class Host {
 
 		// to do if a level gets below zero, set it to zero
 
-		wtPathogenLevel += (nbEventsInOneStep[0] - nbEventsInOneStep[2] - nbEventsInOneStep[6]);
+		wtPathogenLevel += (nbEventsInOneStep[0] - nbEventsInOneStep[2]);
 		mutantPathogenLevel += (nbEventsInOneStep[1] + nbEventsInOneStep[6] - nbEventsInOneStep[3]);
 		immuneSystemLevel += (nbEventsInOneStep[4] - nbEventsInOneStep[5]);
 
 		if(backwardMutation) {
-			mutantPathogenLevel -= nbEventsInOneStep[7];
 			wtPathogenLevel += nbEventsInOneStep[7];
 		}
+
 
 		if(!toBeTreated && !treated && (wtPathogenLevel+mutantPathogenLevel)>= Host.symptomsThreshold)
 			this.setToBeTreated(); // schedule treatment start
@@ -225,15 +225,15 @@ public class Host {
 	public void calculateNumberOfEventsInOneStep(){
 
 		nbEventsInOneStep[0] = getPoisson(tau * r * (1-mu)*wtPathogenLevel); // +1 to wtPathogenLevel
-		nbEventsInOneStep[1] = getPoisson(tau * rm * mutantPathogenLevel); // +1 to mutantPathogenLevel
+		nbEventsInOneStep[1] = backwardMutation? getPoisson(tau * rm * (1-mu) * mutantPathogenLevel): getPoisson(tau * rm * mutantPathogenLevel); // +1 to mutantPathogenLevel
 		nbEventsInOneStep[2] = getPoisson(tau * (eta + kappa* immuneSystemLevel)* wtPathogenLevel); // -1 to wtPathogenLevel
 		nbEventsInOneStep[3] = getPoisson(tau * (eta + kappa* immuneSystemLevel)* mutantPathogenLevel); // -1 to mutantPathogenLevel
 		nbEventsInOneStep[4] = getPoisson(tau * lambda * (mutantPathogenLevel + wtPathogenLevel)); // +1 to immuneSystemLevel
 		nbEventsInOneStep[5] = getPoisson(tau * delta * immuneSystemLevel); // -1 to immuneSystemLevel
-		nbEventsInOneStep[6] = getPoisson(tau * mu * wtPathogenLevel); // -1 to wtPathogenLevel and +1 to mutantPathogenLevel
+		nbEventsInOneStep[6] = getPoisson(tau * r * mu * wtPathogenLevel); // +1 to mutantPathogenLevel
 
 		if(backwardMutation)
-			nbEventsInOneStep[7] = getPoisson(tau * mu * mutantPathogenLevel); // +1 to wtPathogenLevel and -1 to mutantPathogenLevel
+			nbEventsInOneStep[7] = getPoisson(tau * rm * mu * mutantPathogenLevel); // +1 to wtPathogenLevel
 	}
 
 	/**

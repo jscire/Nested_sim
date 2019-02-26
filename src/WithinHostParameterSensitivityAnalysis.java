@@ -23,6 +23,9 @@ public class WithinHostParameterSensitivityAnalysis {
             case "kappa":
                 Host.kappa = paramValue;
                 break;
+            case "epsilon":
+                Host.r0 = paramValue;
+                break;
             case "fc":
                 Host.alpha = paramValue;
                 break;

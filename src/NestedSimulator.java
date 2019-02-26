@@ -11,19 +11,24 @@ import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Random;
 
-
 public class NestedSimulator {
+
+	static int populationSize = 10000;
 
 	public static void assignParameterValue(String paramName, double paramValue) {
 
 		switch(paramName){
 			case "beta":
 				Population.transmissionRate = paramValue;
+				break;
 			case "mu":
 				Host.mu = paramValue;
 				break;
 			case "kappa":
 				Host.kappa = paramValue;
+				break;
+			case "epsilon":
+				Host.r0 = paramValue;
 				break;
 			case "fc":
 				Host.alpha = paramValue;
@@ -49,6 +54,8 @@ public class NestedSimulator {
 			case "eta":
 				Host.eta = paramValue;
 				break;
+			case "S0":
+				populationSize = (int) paramValue;
 			default: break;
 		}
 	}
@@ -69,36 +76,45 @@ public class NestedSimulator {
 
 		int numberOfRunsPerDose = 20;
 		int numberOfDosesPerJob = 5000;
-		int numberOfDosesExplored=51;
-		int populationSize = 1000;
+		int numberOfDosesExplored=31;
 
 		Random randomGen = new Random();
 
-		String nameOfParameterToVary;
-		double parameterValue;
+		String nameOfFirstParameterToVary;
+		double firstParameterValue;
+		String nameOfSecondParameterToVary="none";
+		double secondParameterValue=0;
 
 		if(args.length >= 1){
-			nameOfParameterToVary = args[0];
-			parameterValue = Double.parseDouble(args[1]);
-		} else {
-			nameOfParameterToVary = "beta";
-			parameterValue =  2.5 * 0.1/populationSize; // keeps a reasonable R0 (around 2.50 with default parameter values
+			nameOfFirstParameterToVary = args[0];
+			firstParameterValue = Double.parseDouble(args[1]);
+		}
+		else {
+			nameOfFirstParameterToVary = "beta";
+			firstParameterValue =  2.5 * 0.1/populationSize; // keeps a reasonable R0 (around 2.50 with default parameter values
+		}
+
+		if(args.length >= 4){
+			nameOfSecondParameterToVary = args[2];
+			secondParameterValue = Double.parseDouble(args[3]);
 		}
 
 		boolean isInfiniteTreatment;
 		if(args.length==3) {
 			isInfiniteTreatment = Boolean.parseBoolean(args[2]);
 		}
+		else if(args.length==5)
+			isInfiniteTreatment = Boolean.parseBoolean(args[4]);
 		else {
 			isInfiniteTreatment = false;
 		}
 
 		//Parametrisation of Population and Host
-		assignParameterValue(nameOfParameterToVary, parameterValue);
+		assignParameterValue(nameOfFirstParameterToVary, firstParameterValue);
+		assignParameterValue(nameOfSecondParameterToVary, secondParameterValue);
 
 		if(isInfiniteTreatment)
 			Host.treatmentLength = Double.POSITIVE_INFINITY;
-
 
 		//Treatment doses
 		double[] doses = new double[numberOfDosesExplored];
@@ -107,16 +123,23 @@ public class NestedSimulator {
 		}
 
 		//Output file
-		File outputFile = new File("NestedSimulation_" + nameOfParameterToVary + ".txt");
+		File outputFile;
+		if (nameOfSecondParameterToVary.equals("none")) {
+			outputFile = new File("NestedSimulation_" + nameOfFirstParameterToVary + ".txt");
+		}
+		else {
+			outputFile = new File("NestedSimulation_" + nameOfFirstParameterToVary + "_" + nameOfSecondParameterToVary + ".txt");
+		}
+
 		Path path = outputFile.toPath();
 		try {
 			Files.createFile(path);
 			FileOutputStream fos = new FileOutputStream(outputFile);
 			BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
-			if (args.length==3)
-				bw.write( "NewInfectRes,SuperinfectionRes,NewInfectWT,SuperinfectionWT,InfectiousBurden,Dose," + nameOfParameterToVary + ",NumberOfRuns,isInfTreatment");
+			if (nameOfSecondParameterToVary.equals("none"))
+				bw.write( "NewInfectRes,SuperinfectionRes,NewInfectWT,SuperinfectionWT,InfectiousBurden,Dose," + nameOfFirstParameterToVary + ",NumberOfRuns,isInfTreatment");
 			else
-				bw.write( "NewInfectRes,SuperinfectionRes,NewInfectWT,SuperinfectionWT,InfectiousBurden,Dose," + nameOfParameterToVary + ",NumberOfRuns");
+				bw.write( "NewInfectRes,SuperinfectionRes,NewInfectWT,SuperinfectionWT,InfectiousBurden,Dose," + nameOfFirstParameterToVary + "," + nameOfSecondParameterToVary +  ",NumberOfRuns,isInfTreatment");
 			bw.newLine();
 			bw.close();
 		} catch (IOException e) {
@@ -136,13 +159,13 @@ public class NestedSimulator {
 				pop.infectWildType();
 				int[] infectionEvents  = pop.simulatePopulationAndTrackInfectionsAndBurden();
 
-				if(args.length==3) {
+				if(args.length<=3) {
 					builder.append(df3.format(infectionEvents[0]) + "," + df3.format(infectionEvents[1]) + "," + df3.format(infectionEvents[2]) + "," +
-							df3.format(infectionEvents[3]) + "," + df.format(infectionEvents[4]) + "," +df2.format(doseApplied) + "," + df.format(parameterValue) + "," + df3.format(numberOfRunsPerDose) + ","  + isInfiniteTreatment + "\n");
+							df3.format(infectionEvents[3]) + "," + df.format(infectionEvents[4]) + "," +df2.format(doseApplied) + "," + df.format(firstParameterValue) + "," + df3.format(numberOfRunsPerDose) + ","  + isInfiniteTreatment + "\n");
 				}
 				else {
 					builder.append(df3.format(infectionEvents[0]) + "," + df3.format(infectionEvents[1]) + "," + df3.format(infectionEvents[2]) + "," +
-							df3.format(infectionEvents[3]) + "," + df.format(infectionEvents[4]) + "," +df2.format(doseApplied) + "," + df.format(parameterValue) + "," + df3.format(numberOfRunsPerDose) + "\n");
+							df3.format(infectionEvents[3]) + "," + df.format(infectionEvents[4]) + "," +df2.format(doseApplied) + "," + df.format(firstParameterValue) + "," + df.format(secondParameterValue) + "," + df3.format(numberOfRunsPerDose) + ","  + isInfiniteTreatment + "\n");
 				}
 			}
 
@@ -152,7 +175,7 @@ public class NestedSimulator {
 
 			try {
 				// FileLock lock = channel.lock(); // Get an exclusive lock on the whole file, only works on Windows
-				File lockFile = new File("./lockdir_NestedSimulator_" + nameOfParameterToVary);
+				File lockFile = new File("./lockdir_NestedSimulator_" + nameOfFirstParameterToVary);
 				boolean hasLock = lockFile.mkdir();
 				while(!hasLock) {
 					Thread.sleep(100); // retry to acquire the lock every 100ms.
@@ -163,7 +186,7 @@ public class NestedSimulator {
 					String newData = builder.toString();
 
 					if (newData != null) {
-						ByteBuffer buf = ByteBuffer.allocate(100);
+						ByteBuffer buf = ByteBuffer.allocate(10000);
 						buf.clear();
 						buf.put(newData.getBytes());
 						buf.flip();
