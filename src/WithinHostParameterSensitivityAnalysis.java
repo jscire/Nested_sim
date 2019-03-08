@@ -50,6 +50,9 @@ public class WithinHostParameterSensitivityAnalysis {
             case "eta":
                 Host.eta = paramValue;
                 break;
+            case "tau":
+                Host.tau = paramValue;
+                break;
             default: break;
         }
     }

@@ -57,6 +57,9 @@ public class NestedSimulator {
 			case "S0":
 				populationSize = (int) paramValue;
 				break;
+			case "tau":
+				Host.tau = paramValue;
+				break;
 			default: break;
 		}
 	}

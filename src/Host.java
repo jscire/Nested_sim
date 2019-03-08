@@ -28,7 +28,7 @@ public class Host {
 	public static double kappa = 0.0225; // rate of clearance of pathogen by the immune-system // was 0.0175
 	public static double lambda = 0.035; // growth "rate" of the immune-system
 
-	public final static double tau = 0.005; // step-size of the tau-leaping algorithm
+	public static double tau = 0.005; // step-size of the tau-leaping algorithm
 
 	public static final int transmittedLoad = 7; // pathogen load transmitted to an infected target
 	public static final int basalImmuneSystemLevel = 7;
