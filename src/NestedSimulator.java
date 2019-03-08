@@ -56,6 +56,7 @@ public class NestedSimulator {
 				break;
 			case "S0":
 				populationSize = (int) paramValue;
+				break;
 			default: break;
 		}
 	}
@@ -74,9 +75,11 @@ public class NestedSimulator {
 		DecimalFormat df3 = new DecimalFormat("00000");
 		df3.setDecimalFormatSymbols(custom);
 
+
 		int numberOfRunsPerDose = 20;
 		int numberOfDosesPerJob = 5000;
 		int numberOfDosesExplored=31;
+		boolean isInfiniteTreatment=true;
 
 		Random randomGen = new Random();
 
@@ -99,36 +102,37 @@ public class NestedSimulator {
 			secondParameterValue = Double.parseDouble(args[3]);
 		}
 
-		boolean isInfiniteTreatment;
-		if(args.length==3) {
-			isInfiniteTreatment = Boolean.parseBoolean(args[2]);
-		}
-		else if(args.length==5)
-			isInfiniteTreatment = Boolean.parseBoolean(args[4]);
-		else {
-			isInfiniteTreatment = false;
+
+		boolean isDoseFixed = false;
+		double fixedDose = 0;
+		if(args.length >=5) {
+			isDoseFixed = true;
+			fixedDose = Double.parseDouble(args[4]);
 		}
 
 		//Parametrisation of Population and Host
 		assignParameterValue(nameOfFirstParameterToVary, firstParameterValue);
 		assignParameterValue(nameOfSecondParameterToVary, secondParameterValue);
 
-		if(isInfiniteTreatment)
-			Host.treatmentLength = Double.POSITIVE_INFINITY;
-
 		//Treatment doses
-		double[] doses = new double[numberOfDosesExplored];
-		for (int z=0; z<numberOfDosesExplored; z++){
-			doses[z] = z*1.0/(numberOfDosesExplored -1);
+		double[] doses;
+		if (!isDoseFixed) {
+			doses = new double[numberOfDosesExplored];
+			for (int z=0; z<numberOfDosesExplored; z++){
+				doses[z] = z*1.0/(numberOfDosesExplored -1);
+			}
+		} else {
+			doses = new double[]{fixedDose};
 		}
+
 
 		//Output file
 		File outputFile;
 		if (nameOfSecondParameterToVary.equals("none")) {
-			outputFile = new File("NestedSimulation_" + nameOfFirstParameterToVary + ".txt");
+			outputFile = new File("NestedSimulation_FullTracking_" + nameOfFirstParameterToVary + ".txt");
 		}
 		else {
-			outputFile = new File("NestedSimulation_" + nameOfFirstParameterToVary + "_" + nameOfSecondParameterToVary + ".txt");
+			outputFile = new File("NestedSimulation_FullTracking_" + nameOfFirstParameterToVary + "_" + nameOfSecondParameterToVary + ".txt");
 		}
 
 		Path path = outputFile.toPath();
@@ -137,9 +141,9 @@ public class NestedSimulator {
 			FileOutputStream fos = new FileOutputStream(outputFile);
 			BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
 			if (nameOfSecondParameterToVary.equals("none"))
-				bw.write( "NewInfectRes,SuperinfectionRes,NewInfectWT,SuperinfectionWT,InfectiousBurden,Dose," + nameOfFirstParameterToVary + ",NumberOfRuns,isInfTreatment");
+				bw.write( "NewInfectRes,SuperinfectionRes,NewInfectWT,SuperinfectionWT,FirstInfections,InfectiousBurden,SymptomaticBurden,Dose," + nameOfFirstParameterToVary + ",isInfTreatment");
 			else
-				bw.write( "NewInfectRes,SuperinfectionRes,NewInfectWT,SuperinfectionWT,InfectiousBurden,Dose," + nameOfFirstParameterToVary + "," + nameOfSecondParameterToVary +  ",NumberOfRuns,isInfTreatment");
+				bw.write( "NewInfectRes,SuperinfectionRes,NewInfectWT,SuperinfectionWT,FirstInfections,InfectiousBurden,SymptomaticBurden,Dose," + nameOfFirstParameterToVary + "," + nameOfSecondParameterToVary +  ",isInfTreatment");
 			bw.newLine();
 			bw.close();
 		} catch (IOException e) {
@@ -155,17 +159,21 @@ public class NestedSimulator {
 
 			for (int i = 0; i < numberOfRunsPerDose; i++) {
 
-				Population pop = new Population(populationSize, doseApplied);
-				pop.infectWildType();
-				int[] infectionEvents  = pop.simulatePopulationAndTrackInfectionsAndBurden();
+				Population pop = new Population(populationSize -1, doseApplied);
+				Host john = new Host(populationSize, 0, 0, 7);
+				pop.addSusceptibleHost(john);
+				pop.infectWildType(john);
+				int[] infectionEvents  = pop.simulatePopulationAndTrackInfectionsAndFirstHostAndTwoBurdenTypes(john);
 
 				if(args.length<=3) {
 					builder.append(df3.format(infectionEvents[0]) + "," + df3.format(infectionEvents[1]) + "," + df3.format(infectionEvents[2]) + "," +
-							df3.format(infectionEvents[3]) + "," + df.format(infectionEvents[4]) + "," +df2.format(doseApplied) + "," + df.format(firstParameterValue) + "," + df3.format(numberOfRunsPerDose) + ","  + isInfiniteTreatment + "\n");
+							df3.format(infectionEvents[3]) + "," + df.format(infectionEvents[4]) + "," + df.format(infectionEvents[5]) + "," + df.format(infectionEvents[6]) + "," +
+							df2.format(doseApplied) + "," + df.format(firstParameterValue) + ","  + isInfiniteTreatment + "\n");
 				}
 				else {
 					builder.append(df3.format(infectionEvents[0]) + "," + df3.format(infectionEvents[1]) + "," + df3.format(infectionEvents[2]) + "," +
-							df3.format(infectionEvents[3]) + "," + df.format(infectionEvents[4]) + "," +df2.format(doseApplied) + "," + df.format(firstParameterValue) + "," + df.format(secondParameterValue) + "," + df3.format(numberOfRunsPerDose) + ","  + isInfiniteTreatment + "\n");
+							df3.format(infectionEvents[3]) + "," + df3.format(infectionEvents[4]) + "," + df.format(infectionEvents[5]) + "," + df.format(infectionEvents[6]) + "," +
+							df2.format(doseApplied) + "," + df.format(firstParameterValue) + "," + df.format(secondParameterValue)  + ","  + isInfiniteTreatment + "\n");
 				}
 			}
 

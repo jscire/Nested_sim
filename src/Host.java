@@ -23,7 +23,7 @@ public class Host {
 
 	// parameters for the within-host model
 	public static double eta = 0.02; // death rate of the pathogen
-	public static double mu = 0.001; // mutation rate towards resistance // was 0.01
+	public static double mu = 0.002; // mutation rate towards resistance // was 0.01 in Day and Read // changed from 0.001 to 0.002 to accommodate the change in how mutations occur
 	public static double delta = 0.01; // death rate of the immune-system
 	public static double kappa = 0.0225; // rate of clearance of pathogen by the immune-system // was 0.0175
 	public static double lambda = 0.035; // growth "rate" of the immune-system
@@ -36,7 +36,7 @@ public class Host {
 	public static double infectiosityThreshold = 50; // threshold for the pathogen load above which patients can infect other people
 	public static double symptomsThreshold = 100; // threshold for the pathogen load above which patients suffer from symptoms
 	public static final double treatmentStartDelay = 1; // how many days after symptoms have set in should a patient wait to receive treatment?
-	public static double treatmentLength = 7; // how many days does the standard treatment last?
+	public static double treatmentLength = Double.POSITIVE_INFINITY; // how many days does the standard treatment last? // was 7 days
 
 	public final int ID;
 	public double immuneSystemLevel;

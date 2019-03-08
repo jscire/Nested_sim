@@ -145,6 +145,19 @@ public class Population {
 		return res;
 	}
 
+	public int[] simulateOnePopulationTimeStepTrackInfectionsAndHost(Host michael) throws Exception{
+
+		for (int i =0 ; i < timeStepRatio ; i++)
+			simulateAllWithinHostDynamics();
+
+		int[] res = simulateInfectionEventsInOneStepTrackInfectionsAndHost(michael);
+
+		if ((nonInfectiousCount + infectiousCount) < 1)
+			return null;
+
+		return res;
+	}
+
 	public void simulateAllWithinHostDynamics() throws Exception{
 
 		// initialize number of symptomatic hosts
@@ -276,18 +289,99 @@ public class Population {
 				else infections[3] ++;
 			}
 
-			//TO DO, think of doing that in a count instead going to the size everytime
+			//TO DO, think of doing that in a count instead going to the size every time
 			infectiousCount = infectiousPopulation.size();
 			nonInfectiousCount = nonInfectiousPopulation.size();
 			recoveredCount = recoveredPopulation.size();
 			susceptibleCount = susceptiblePopulation.size();
+		}
 
-			int total = susceptibleCount + infectiousCount + nonInfectiousCount + recoveredCount;
+		return infections;
+	}
 
-			// to do remove, just for debugging
-			if(total != populationSize) {
-				throw new Exception("Problem: total amount of individuals is not equal to population size");
+	public int[] simulateInfectionEventsInOneStepTrackInfectionsAndHost(Host michael) throws Exception{
+
+		if(infectionByMixedPathogenLoad) {
+			throw new Exception("Tracking infections is not compatible with the mixed infections model");
+		}
+
+		int nbInfectionEventsInStep = getPoisson(timeStepRatio * Host.tau * transmissionRate * infectiousCount * (populationSize-recoveredCount-1)); // the -1 is here to not allow a host to infect themself
+
+		if(nbInfectionEventsInStep > (populationSize-recoveredCount-1) && nbInfectionEventsInStep>1) {
+			throw new Exception("Too many infection events happened at once, maybe reduce timeStepRatio or Host.tau.");
+		}
+
+		int[] infections = new int[]{0,0,0,0,0}; // new infect by res / superinfection by res / new infect by wt / superinfection infect by wt / infections by tracked Host
+
+		for (int i = 0; i<nbInfectionEventsInStep; i++) {
+
+			int randomInfectedHost = randomValueGenerator.nextInt(populationSize-recoveredCount-1); // the -1 is here to not allow a host to infect themself
+			int randomInfectingHost = randomValueGenerator.nextInt(infectiousCount);
+
+			Host infectingHost = new Host(0); // find the infecting host among the infectious population
+			int countInfecting = 0;
+			for (Host h1 : infectiousPopulation) {
+				if(countInfecting == randomInfectingHost) {
+					infectingHost = h1;
+					break; // break the loop once infecting host has been found
+				}
+				countInfecting ++;
 			}
+
+			if(infectingHost.equals(michael))
+				infections[4] ++;
+
+			Host infectedHost = new Host(0); // find the infected host among the non-recovered population
+
+			int countInfected = 0;
+			if(randomInfectedHost < susceptibleCount) { // the newly infected host was previously a susceptible host
+				for (Host h2 : susceptiblePopulation) { // iterate n-times (with n randomly drawn) in the susceptible pop to find the newly infected host
+					if (countInfected == randomInfectedHost) {
+						infectedHost = h2;
+						break;
+					}
+					countInfected ++;
+				}
+
+				if(infectedHost.getInfectedByFullLoadAndIsInfectedByRes(infectingHost))
+					infections[0] ++;
+				else infections[2] ++;
+
+				susceptiblePopulation.remove(infectedHost);
+				nonInfectiousPopulation.add(infectedHost); //newly infected host is added to non-infectious population
+
+			} else {
+				randomInfectedHost -= susceptibleCount;
+				if(randomInfectedHost < nonInfectiousCount) { // the newly infected host was previously a non-infectious host
+					for (Host h2 : nonInfectiousPopulation) { // iterate n-times (with n randomly drawn) in the non-infectious pop to find the newly infected host
+						if (countInfected == randomInfectedHost) {
+							infectedHost = h2;
+							break;
+						}
+						countInfected ++; // note: we don't care to check if the infected host is now infectious, it will be done in the next simulation step
+					}
+				} else { // the newly infected host was previously an infectious host
+					randomInfectedHost -= nonInfectiousCount;
+					for (Host h2 : infectiousPopulation) { // iterate n-times (with n randomly drawn) in the infectious pop to find the newly infected host
+						if (h2.equals(infectingHost)) continue; // so that infectedHost and infectingHost cannot be the same
+
+						if (countInfected == randomInfectedHost) {
+							infectedHost = h2;
+							break;
+						}
+						countInfected ++;
+					}
+				}
+				if(infectedHost.getInfectedByFullLoadAndIsInfectedByRes(infectingHost))
+					infections[1] ++;
+				else infections[3] ++;
+			}
+
+			//TO DO, think of doing that in a count instead going to the size every time
+			infectiousCount = infectiousPopulation.size();
+			nonInfectiousCount = nonInfectiousPopulation.size();
+			recoveredCount = recoveredPopulation.size();
+			susceptibleCount = susceptiblePopulation.size();
 		}
 
 		return infections;
@@ -314,6 +408,31 @@ public class Population {
 		return infections;
 	}
 
+	public int[] simulatePopulationAndTrackInfectionsAndFirstHostAndTwoBurdenTypes(Host michael) throws Exception{
+
+		int[] infections = new int[]{0,0,0,0,0,0,0}; // new infect by res / superinfection by res / new infect by wt / superinfection infect by wt // burden (floored to the integer)
+
+		double infectiousBurden = 0;
+		double symptomaticBurden = 0;
+
+		int[] stepResult = simulateOnePopulationTimeStepTrackInfectionsAndHost(michael);
+
+		while(stepResult != null){
+			for (int i= 0; i < 5; i++){
+				infections[i] += stepResult[i];
+			}
+			infectiousBurden += (infectiousCount * Host.tau * timeStepRatio);
+			symptomaticBurden += (symptomaticCount * Host.tau * timeStepRatio);
+			stepResult = simulateOnePopulationTimeStepTrackInfectionsAndHost(michael);
+		}
+
+		infections[5] = (int) infectiousBurden;
+		infections[6] = (int) symptomaticBurden;
+
+		return infections;
+	}
+
+
 
 	public static void main(String[] args) throws Exception {
 
@@ -323,6 +442,9 @@ public class Population {
 		pop.addSusceptibleHost(john);
 		pop.infectWildType(john);
 
-		int[] infectionEvents  = pop.simulatePopulationAndTrackInfectionsAndBurden();
+		int[] infectionEvents  = pop.simulatePopulationAndTrackInfectionsAndFirstHostAndTwoBurdenTypes(john);
+		for (int i = 0; i < infectionEvents.length; i++) {
+			System.out.println(i + " " + infectionEvents[i]);
+		}
 	}
 }
