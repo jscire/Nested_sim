@@ -163,7 +163,7 @@ public class NestedSimulator {
 			for (int i = 0; i < numberOfRunsPerDose; i++) {
 
 				Population pop = new Population(populationSize -1, doseApplied);
-				Host john = new Host(populationSize, 0, 0, 7);
+				Host john = new Host(populationSize, 0, 0, 7, doseApplied);
 				pop.addSusceptibleHost(john);
 				pop.infectWildType(john);
 				int[] infectionEvents  = pop.simulatePopulationAndTrackInfectionsAndFirstHostAndTwoBurdenTypes(john);
