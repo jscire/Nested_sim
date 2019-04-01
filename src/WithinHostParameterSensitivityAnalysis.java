@@ -225,5 +225,6 @@ public class WithinHostParameterSensitivityAnalysis {
                 channel.close();
             }
         }
+        System.exit(0);
     }
 }

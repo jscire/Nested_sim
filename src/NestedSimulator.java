@@ -221,5 +221,6 @@ public class NestedSimulator {
 				channel.close();
 			}
 		}
+		System.exit(0);
 	}
 }
