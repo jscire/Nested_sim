@@ -36,6 +36,9 @@ public class NestedSimulator {
 			case "symptomThreshold":
 				Host.symptomsThreshold = paramValue;
 				break;
+			case "infectiosityThreshold":
+				Host.infectiosityThreshold = paramValue;
+				break;
 			case "flatness":
 				Host.flatness = paramValue;
 				break;

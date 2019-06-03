@@ -14,7 +14,7 @@ import java.util.Random;
 public class WithinHostParameterSensitivityAnalysis {
 
 
-    public static void assignParameterValue(String paramName, double paramValue, boolean isWTstrain) {
+    public static void assignParameterValue(String paramName, double paramValue) {
 
         switch(paramName){
             case "mu":
@@ -31,6 +31,9 @@ public class WithinHostParameterSensitivityAnalysis {
                 break;
             case "symptomThreshold":
                 Host.symptomsThreshold = paramValue;
+                break;
+            case "infectiosityThreshold":
+                Host.infectiosityThreshold = paramValue;
                 break;
             case "flatness":
                 Host.flatness = paramValue;
@@ -83,7 +86,7 @@ public class WithinHostParameterSensitivityAnalysis {
 
         if(args.length >= 1) {
             measureToTake = args[0];
-            if(!measureToTake.equals("RecoveryRateWT") && !measureToTake.equals("RecoveryRateMS") && !measureToTake.equals("ProbabilityEmergence")) {
+            if(!measureToTake.equals("RecoveryRateWT") && !measureToTake.equals("RecoveryRateMS") && !measureToTake.contains("ProbabilityEmergence")) {
                 throw new IllegalArgumentException("The measure to take is either RecoveryRate or ProbabilityEmergence");
             }
         }
@@ -144,7 +147,7 @@ public class WithinHostParameterSensitivityAnalysis {
 
 
         //Parametrisation of Host
-        assignParameterValue(nameOfParameterToVary, parameterValue, strainOfInterest.equals("WT"));
+        assignParameterValue(nameOfParameterToVary, parameterValue);
 
         if(measureToTake.equals("RecoveryRateWT") || measureToTake.equals("RecoveryRateMS"))
             Host.mu = 0;
@@ -160,11 +163,11 @@ public class WithinHostParameterSensitivityAnalysis {
             String reportedMeasure;
             double doseApplied = doses[randomGen.nextInt(doses.length)];
 
-            if(measureToTake.equals("ProbabilityEmergence")) {
+            if(measureToTake.contains("ProbabilityEmergence")) {
                 int nbOfEmerged = 0;
                 for (int j = 0; j < numberOfRunsPerDose; j++) {
                     Host john = new Host(0, WTload, MSload, Host.basalImmuneSystemLevel, doseApplied);
-                    nbOfEmerged += john.simulateAndGetEmergenceResistance();
+                    nbOfEmerged += john.simulateAndGetEmergenceOtherStrain(strainOfInterest.equals("WT"));
                 }
                 reportedMeasure = df3.format(nbOfEmerged);
             }

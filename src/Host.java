@@ -201,10 +201,12 @@ public class Host {
 
 	}
 
-	public int simulateAndGetEmergenceResistance(){
+	public int simulateAndGetEmergenceOtherStrain(boolean otherStrainIsResistance){
 		
 		while(this.simulateOneTimeStep(true) >= 0){
-			if(mutantPathogenLevel >= Host.infectiosityThreshold)
+			if(otherStrainIsResistance && mutantPathogenLevel >= Host.infectiosityThreshold)
+				return 1;
+			else if (!otherStrainIsResistance && wtPathogenLevel >= Host.infectiosityThreshold)
 				return 1;
 		}
 		return 0;
@@ -301,7 +303,7 @@ public class Host {
 		Host john  = new Host(0, 7, 0, 7, 0.4);
 		int nbOfEmerged = 0;
 		for(int i = 0; i < 1000; i++){
-			nbOfEmerged += john.simulateAndGetEmergenceResistance();
+			nbOfEmerged += john.simulateAndGetEmergenceOtherStrain(true);
 			john  = new Host(0, 7, 0, 7, 0.4);
 			if(i % 1000 ==0)
 				System.out.println(i + "\t" + nbOfEmerged);
